@@ -57,7 +57,10 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               // 하단 내비게이션 바 (로그인 여부에 따라 동작이 달라짐)
-              _buildBottomNavigationBar(context),
+              SafeArea(
+                top: false,
+                child:_buildBottomNavigationBar(context),
+              ),
             ],
           ),
         ],
@@ -130,44 +133,49 @@ class _MainScreenState extends State<MainScreen> {
 
     return Container(
       width: double.infinity,
-      height: AppSizes.hNaviArea,
+      // height 속성을 제거하여 SafeArea의 여백이 포함될 수 있도록 합니다.
       color: AppColors.bodyNavi,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(navItems.length, (index) {
-          bool isSelected = _selectedIndex == index && _isLoggedIn;
+      child: SafeArea(
+        top: false, // 위쪽 여백은 무시
+        child: Container(
+          // 실제 버튼들이 배치되는 영역의 높이만 지정합니다.
+          height: AppSizes.hNaviArea,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(navItems.length, (index) {
+              bool isSelected = _selectedIndex == index && _isLoggedIn;
 
-          return GestureDetector(
-            // 로그인 상태일 때만 탭 전환이 가능 (Enable/Disable)
-            onTap: _isLoggedIn ? () {
-              setState(() => _selectedIndex = index);
-            } : null,
+              return GestureDetector(
+                onTap: _isLoggedIn ? () {
+                  setState(() => _selectedIndex = index);
+                } : null,
 
-            child: Opacity(
-              // 로그인 안되어 있으면 버튼을 반투명하게 (Disable 시각화)
-              opacity: _isLoggedIn ? 1.0 : 0.4,
-              child: Container(
-                width: AppSizes.wPercent(context, AppSizes.wNaviButton),
-                height: AppSizes.hNaviButton,
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppColors.gradBtnBlue : AppColors.gradBtnNavi,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusNavi),
-                ),
-                child: Center(
-                  child: Text(
-                    navItems[index],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: AppSizes.fontSmall,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                child: Opacity(
+                  opacity: _isLoggedIn ? 1.0 : 0.4,
+                  child: Container(
+                    width: AppSizes.wPercent(context, AppSizes.wNaviButton),
+                    height: AppSizes.hNaviButton,
+                    decoration: BoxDecoration(
+                      gradient: isSelected ? AppColors.gradBtnBlue : AppColors.gradBtnNavi,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusNavi),
+                    ),
+                    child: Center(
+                      child: Text(
+                        navItems[index],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: AppSizes.fontSmall,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
