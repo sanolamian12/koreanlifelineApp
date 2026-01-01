@@ -108,13 +108,13 @@ class _MainScreenState extends State<MainScreen> {
           _buildActionButton("이용 문의", AppColors.gradBtnBlue, () {
             print("이용 문의 클릭");
           }),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // 로그인 버튼
           _buildActionButton("로그인", AppColors.gradBtnGreen, () {
             setState(() => _isLoggedIn = true);
           }),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
 
           // 하단 카피라이트 (복구됨)
           _buildCopyright(),
