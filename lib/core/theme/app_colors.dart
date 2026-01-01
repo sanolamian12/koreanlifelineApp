@@ -17,6 +17,12 @@ class AppColors {
     begin: Alignment.topCenter, end: Alignment.bottomCenter,
   );
 
+  static const Gradient gradBtnClick = LinearGradient(
+    colors: [Color(0xFFE3FF46), Color(0xFF949900)],
+    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+  );
+
+
   static const Gradient gradTextboxGreen = LinearGradient(
     colors: [Color(0xFFDDFFD6), Color(0xFFB2E69E)],
     begin: Alignment.topLeft, end: Alignment.bottomRight,
