@@ -26,8 +26,7 @@ class StatusScreen extends StatelessWidget {
           // 2. 일시 정보 (함수 호출 결과값을 넣기 좋게 라벨과 데이터 분리)
           Column(
             children: [
-              _buildDateRow("2025.12.30 ", "화 (Tuesday)"),
-              _buildDateRow("시간", "오후 1시 01분"),
+              _buildDateRow("12.30(화) ", "오후 1시 01분"),
             ],
           ),
           const SizedBox(height: 20),
@@ -37,9 +36,8 @@ class StatusScreen extends StatelessWidget {
             context,
             gradient: AppColors.gradTextboxGreen,
             data: {
-              "현재 차수": "오전 9시 - 오후 1시",
-              "현재 상담원": "홍길동 님",
-              "전화 번호": "0422 123 132",
+              "현재": "오전 9시 - 오후 1시",
+              "상담원": "홍길동 님",
             },
           ),
           const SizedBox(height: 15),
@@ -49,9 +47,8 @@ class StatusScreen extends StatelessWidget {
             context,
             gradient: AppColors.gradBtnGray,
             data: {
-              "다음 차수": "오후 1시 - 오후 5시",
-              "다음 상담원": "임꺽정 님",
-              "전화 번호": "0422 663 534",
+              "다음": "오후 1시 - 오후 5시",
+              "상담원": "임꺽정 님",
             },
           ),
           const SizedBox(height: 25),

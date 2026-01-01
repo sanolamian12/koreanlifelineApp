@@ -47,9 +47,8 @@ class UrgentScreen extends StatelessWidget {
               context,
               gradient: AppColors.gradTextboxRed,
               data: {
-                "현재 차수": "오후 1시 - 오후 5시",
-                "현재 상담원": "홍길동 님",
-                "전화 번호": "0422 123 132",
+                "현재": "오후 1시 - 오후 5시",
+                "상담원": "홍길동 님",
               },
             ),
             const SizedBox(height: 15),
@@ -59,9 +58,8 @@ class UrgentScreen extends StatelessWidget {
               context,
               gradient: AppColors.gradTextboxGreen,
               data: {
-                "현재 차수": "오후 1시 - 오후 5시",
-                "현재 상담원": "임꺽정 님",
-                "전화 번호": "0422 663 534",
+                "현재": "오후 1시 - 오후 5시",
+                "상담원": "임꺽정 님",
               },
             ),
             const SizedBox(height: 25),
