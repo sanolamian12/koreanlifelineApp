@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
+import '../core/widgets/highlight_button.dart';
 
 // 페이지들 임포트
 import 'my_page.dart';
@@ -186,13 +187,32 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildActionButton(String text, Gradient gradient, VoidCallback onPressed) {
-    return GestureDetector(
+    return HighlightButton(
       onTap: onPressed,
+      defaultGradient: gradient,
+      highlightGradient: AppColors.gradBtnClick,
+      shape: const StadiumBorder(),
+      // 기존에 사용하던 그림자 효과 복구
+      shadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.2),
+          blurRadius: 4,
+          offset: const Offset(0, 4),
+        )
+      ],
       child: Container(
         width: AppSizes.wPercent(context, AppSizes.wMainButton),
         height: AppSizes.hMainButton,
-        decoration: ShapeDecoration(gradient: gradient, shape: const StadiumBorder()),
-        child: Center(child: Text(text, style: const TextStyle(color: Colors.white, fontSize: AppSizes.fontMainButton, fontWeight: FontWeight.bold))),
+        alignment: Alignment.center,
+        // 여기에 Container 자체 decoration을 넣으면 중복되어 에러가 날 수 있으니 비워둡니다.
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: AppSizes.fontMainButton,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

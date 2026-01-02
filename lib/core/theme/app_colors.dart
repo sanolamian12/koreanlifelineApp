@@ -44,6 +44,5 @@ class AppColors {
   );
 
   // --- 단색 (Solid Color) ---
-  static const Color textOrange = Color(0xFFDC8113);
   static const Color bodyNavi = Color(0xFF828282);
 }

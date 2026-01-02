@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
+import '../core/widgets/highlight_button.dart';
 
 class MyActivity extends StatelessWidget {
   const MyActivity({super.key});
@@ -90,22 +91,26 @@ class MyActivity extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       alignment: Alignment.centerLeft,
-      child: GestureDetector(
+      child: HighlightButton(
         onTap: () => Navigator.pop(context),
+        defaultGradient: AppColors.gradBtnBlue,
+        highlightGradient: AppColors.gradBtnClick, // 클릭 시 노란색
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusButton),
+        ),
+        shadows: [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 2))
+        ],
         child: Container(
           width: AppSizes.wPercent(context, AppSizes.wBackButton),
           height: AppSizes.hPercent(context, AppSizes.hBackButton),
-          decoration: BoxDecoration(
-            gradient: AppColors.gradBtnBlue,
-            borderRadius: BorderRadius.circular(AppSizes.radiusButton),
-            boxShadow: [
-              BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 2))
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              "뒤 로",
-              style: TextStyle(color: Colors.white, fontSize: AppSizes.fontBig, fontWeight: FontWeight.bold),
+          alignment: Alignment.center,
+          child: const Text(
+            "뒤 로",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: AppSizes.fontBig,
+                fontWeight: FontWeight.bold
             ),
           ),
         ),
@@ -144,31 +149,38 @@ class MyActivity extends StatelessWidget {
 
   // 상세 활동 카드 (Overflow 문제 수정)
   Widget _buildActivityCard(BuildContext context, Map<String, String> data) {
-    return Container(
-      width: AppSizes.wPercent(context, AppSizes.wBigCard),
-      // height 속성을 제거하거나 constraints를 주어 텍스트에 따라 늘어나게 함
-      constraints: BoxConstraints(
-        minHeight: AppSizes.hPercent(context, AppSizes.hBigCard), // 최소 높이 유지
-      ),
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-      decoration: BoxDecoration(
-        gradient: AppColors.gradBtnGray,
-        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-        boxShadow: [
+    // 1. HighlightButton 자체를 Padding으로 감싸서 아이템 간 간격을 확보합니다.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15), // 기존의 margin: 15 효과와 동일
+      child: HighlightButton(
+        onTap: () => print("${data["start"]} 기록 클릭됨"),
+        defaultGradient: AppColors.gradBtnGray,
+        highlightGradient: AppColors.gradBtnClick,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+        ),
+        shadows: [
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))
         ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬로 가독성 향상
-        children: [
-          _buildCardRow("시작:", data["start"]!),
-          const SizedBox(height: 6),
-          _buildCardRow("종료:", data["end"]!),
-          const SizedBox(height: 6),
-          _buildCardRow("시간:", data["duration"]!),
-        ],
+        child: Container(
+          width: AppSizes.wPercent(context, AppSizes.wBigCard),
+          constraints: BoxConstraints(
+            minHeight: AppSizes.hPercent(context, AppSizes.hBigCard),
+          ),
+          // 2. 내부 Container의 margin은 제거합니다. (HighlightButton이 꽉 차게 함)
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardRow("시작:", data["start"]!),
+              const SizedBox(height: 6),
+              _buildCardRow("종료:", data["end"]!),
+              const SizedBox(height: 6),
+              _buildCardRow("시간:", data["duration"]!),
+            ],
+          ),
+        ),
       ),
     );
   }
