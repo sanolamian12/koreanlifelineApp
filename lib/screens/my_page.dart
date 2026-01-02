@@ -2,16 +2,139 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
-// MyActivity 클래스가 정의된 파일을 import 하세요.
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/models/user_model.dart';
+import '../core/network/api_service.dart';
+import 'main_screen.dart';
 import 'my_activity.dart';
 import '../core/widgets/highlight_button.dart';
 
 
-class MyPage extends StatelessWidget {
-  const MyPage({super.key});
+class MyPage extends StatefulWidget {
+  final UserModel? user;
+  const MyPage({super.key, this.user});
 
   @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  final ApiService _apiService = ApiService();
+  String _totalHours = "0";
+  String _historyCount = "0";
+  String? _displayPhone; // 화면에 표시할 전화번호 (수정 즉시 반영용)
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayPhone = widget.user?.phone; // 초기값 설정
+    _fetchActivity();
+  }
+  @override
+  void didUpdateWidget(MyPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // MainScreen에서 새 유저 정보를 주면, 마이페이지 내부 변수들도 갱신
+    if (widget.user != oldWidget.user) {
+      setState(() {
+        _displayPhone = widget.user?.phone;
+        // 필요한 다른 변수들도 여기서 업데이트
+      });
+    }
+  }
+  // 데이터 로딩 (통계 및 최신 정보)
+  Future<void> _fetchActivity() async {
+    if (widget.user == null) return;
+    final data = await _apiService.getMyActivities(widget.user!.accountId);
+    if (data != null && mounted) {
+      setState(() {
+        _totalHours = data['totalHours'].toString();
+        _historyCount = data['historyCount'].toString();
+        _isLoading = false;
+      });
+    }
+  }
+  // 활동 기간 계산 (From registeredAt - To Now)
+  String _getActivityPeriod() {
+    if (widget.user == null) return "-";
+    final fromDate = widget.user!.registeredAt; // 서버에서 받아온 가입일
+    final now = DateTime.now();
+    return "${fromDate.year}.${fromDate.month.toString().padLeft(2, '0')} - ${now.year}.${now.month.toString().padLeft(2, '0')}";
+  }
+  // 전화번호 수정 다이얼로그
+  void _showUpdatePhoneDialog() {
+    final TextEditingController _phoneController = TextEditingController(text: _displayPhone);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("전화번호 수정"),
+        content: TextField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(hintText: "새로운 전화번호 입력"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("취소")),
+
+          ElevatedButton(
+            onPressed: () async {
+              final newPhone = _phoneController.text;
+
+              // 이제 success 여부가 아니라, 서버가 변환한 '문자열'을 기다립니다.
+              final serverFormattedPhone = await _apiService.updatePhoneNumber(
+                  widget.user!.accountId,
+                  newPhone
+              );
+
+              if (serverFormattedPhone != null && mounted) {
+                setState(() {
+                  // 핵심: 사용자가 입력한 newPhone이 아니라, 서버가 준 번호를 반영!
+                  _displayPhone = serverFormattedPhone;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("번호가 수정되었습니다."))
+                );
+              } else {
+                // 실패 처리
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("번호 수정에 실패했습니다."))
+                );
+              }
+            },
+            child: const Text("저장"),
+          ),
+
+        ],
+      ),
+    );
+  }
+
+  // 로그아웃 로직 (SharedPreferences 삭제 및 메인 이동)
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (mounted) {
+      // Navigator를 통해 이동할 때 UniqueKey를 가진 MainScreen을 새로 생성합니다.
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => MainScreen(
+              key: UniqueKey(), // <--- 핵심: 새로운 키를 부여하여 상태를 완전히 초기화
+              isLoggedIn: false,
+              user: null
+          ),
+        ),
+            (route) => false,
+      );
+    }
+  }
+  @override
   Widget build(BuildContext context) {
+    final currentName = widget.user?.accountName ?? "상담원";
+    final currentPhone = widget.user?.phone ?? "번호 없음";
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -28,7 +151,7 @@ class MyPage extends StatelessWidget {
 
           // 2. 사용자 정보
           Text(
-            "홍길동 님",
+            "$currentName 님",
             style: TextStyle(
               fontSize: AppSizes.fontBiggest,
               fontWeight: FontWeight.bold,
@@ -37,7 +160,7 @@ class MyPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "0432 123 456",
+            currentPhone,
             style: TextStyle(
               fontSize: AppSizes.fontBiggest,
               fontWeight: FontWeight.bold,
@@ -47,9 +170,7 @@ class MyPage extends StatelessWidget {
           const SizedBox(height: 30),
 
           // 3. 내 번호 업데이트 버튼
-          _buildActionButton(context, "내 번호 업데이트", AppColors.gradBtnBlue, () {
-            print("내 번호 업데이트 클릭");
-          }),
+          _buildActionButton(context, "내 번호 업데이트", AppColors.gradBtnBlue, _showUpdatePhoneDialog),
           const SizedBox(height: 30),
 
           // 4. 활동 정보 요약
@@ -58,9 +179,9 @@ class MyPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow("활동 기간:", "2020.01 - 2025.12"),
-                _buildInfoRow("상담 횟수:", "30회"),
-                _buildInfoRow("상담 시간:", "99시간"),
+                _buildInfoRow("활동 기간:", _getActivityPeriod()),
+                _buildInfoRow("상담 횟수:", "$_historyCount회"),
+                _buildInfoRow("상담 시간:", "$_totalHours시간"),
               ],
             ),
           ),
@@ -76,9 +197,7 @@ class MyPage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // 6. 로그아웃 버튼
-          _buildActionButton(context, "로 그 아 웃", AppColors.gradBtnGreen, () {
-            print("로그아웃 클릭");
-          }),
+        _buildActionButton(context, "로 그 아 웃", AppColors.gradBtnGreen, () => _logout()),
           const SizedBox(height: 30),
         ],
       ),

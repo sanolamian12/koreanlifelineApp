@@ -4,9 +4,11 @@ import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
 import 'select_counselor.dart';
 import '../core/widgets/highlight_button.dart';
+import '../core/models/user_model.dart';
 
 class StatusScreen extends StatelessWidget {
-  const StatusScreen({super.key});
+  final UserModel? user;
+  const StatusScreen({super.key, this.user});
 
   @override
   Widget build(BuildContext context) {
