@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_screen.dart';
 import 'core/network/api_service.dart';
 import 'core/models/user_model.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   // 비동기 데이터 로딩을 위해 Flutter 엔진 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
+  await initializeDateFormatting('ko_KR', null);
   // 1. 기기에 저장된 로그인 정보 가져오기
   final prefs = await SharedPreferences.getInstance();
   final savedId = prefs.getString('saved_id');
