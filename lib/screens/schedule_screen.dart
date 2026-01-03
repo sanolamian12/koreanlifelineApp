@@ -4,77 +4,114 @@ import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
 import '../core/network/api_service.dart';
 import '../core/models/user_model.dart';
+import '../core/models/schedule_model.dart'; // 모델 임포트
 
-class ScheduleScreen extends StatelessWidget {
-  // 2. user 변수 추가 및 생성자 수정
+String _updatedDateText = "Update: -";
+
+class ScheduleScreen extends StatefulWidget {
   final UserModel? user;
-  const ScheduleScreen({super.key, this.user}); // {super.key} 뒤에 this.user 추가
+  const ScheduleScreen({super.key, this.user});
+
+  @override
+  State<ScheduleScreen> createState() => _ScheduleScreenState();
+}
+
+class _ScheduleScreenState extends State<ScheduleScreen> {
+  final ApiService _apiService = ApiService();
+  List<ScheduleModel> _allSchedules = [];
+  int? _currentOrderNo;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  // 서버에서 데이터 가져오기
+  Future<void> _loadData() async {
+    try {
+      // 세 가지 API를 병렬로 호출하여 효율성 극대화
+      final results = await Future.wait([
+        _apiService.getAllSchedules(),
+        _apiService.getCurrentOrderNo(),
+        _apiService.getLastUpdatedDate(), // 새로 추가한 날짜 API
+      ]);
+
+      setState(() {
+        _allSchedules = results[0] as List<ScheduleModel>;
+        _currentOrderNo = results[1] as int?;
+
+        // 날짜 데이터 처리
+        final DateTime? updatedDate = results[2] as DateTime?;
+        if (updatedDate != null) {
+          // 현지 시간 기준으로 포맷팅 (YYYY.MM.DD)
+          _updatedDateText = "Update: ${updatedDate.year}.${updatedDate.month.toString().padLeft(2, '0')}.${updatedDate.day.toString().padLeft(2, '0')}";
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print("데이터 로딩 에러: $e");
+    }
+  }
+
+  // 요일별로 그룹화하는 헬퍼 함수
+  Map<String, List<ScheduleModel>> _groupSchedulesByDay() {
+    Map<String, List<ScheduleModel>> grouped = {};
+    for (var schedule in _allSchedules) {
+      grouped.putIfAbsent(schedule.day, () => []).add(schedule);
+    }
+    return grouped;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 임시 데이터 (하이라이트 포함)
-    final List<Map<String, dynamic>> weeklySchedule = [
-      {
-        "day": "Monday",
-        "slots": [
-          {"time": "9AM - 1PM", "name": "홍길동", "isCurrent": true},
-          {"time": "1PM - 5PM", "name": "임꺽정", "isCurrent": false},
-          {"time": "5PM - 9PM", "name": "이몽룡", "isCurrent": false},
-          {"time": "9PM - 9AM", "name": "성춘향", "isCurrent": false},
-        ]
-      },
-      {
-        "day": "Saturday",
-        "slots": [
-          {"time": "9AM - 1PM", "name": "홍길동", "isCurrent": true},
-          {"time": "1PM - 5PM", "name": "임꺽정", "isCurrent": false},
-          {"time": "5PM - 9PM", "name": "이몽룡", "isCurrent": false},
-          {"time": "9PM - 9AM", "name": "성춘향", "isCurrent": false},
-        ]
-      },
-
-      // ... 나머지 요일 데이터
-    ];
+    final groupedData = _groupSchedulesByDay();
+    // 요일 순서 정렬을 원할 경우 리스트 생성
+    final daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     return Scaffold(
-      // 1. Scaffold 자체 배경을 투명하게 설정하여 기저의 배경이미지가 보이게 함
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Container(
-            // 2. 내부 컨테이너 배경색 제거 (투명 유지)
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator()) // 로딩 중 표시
+            : RefreshIndicator( // 당겨서 새로고침 추가
+          onRefresh: _loadData,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  Image.asset(
+                    AppAssets.logoImg,
+                    width: AppSizes.wPercent(context, AppSizes.wImage),
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(_updatedDateText,
+                      style: TextStyle(fontSize: AppSizes.fontMainButton, fontWeight: FontWeight.bold, color: Colors.black)),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "모든 생명의 전화 상담자 선생님들의\n봉사와 희생에 언제나 감사드립니다.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: AppSizes.fontMid, color: Colors.black, height: 1.4),
+                  ),
+                  const SizedBox(height: 30),
 
-                // 로고
-                Image.asset(
-                  AppAssets.logoImg,
-                  width: AppSizes.wPercent(context, AppSizes.wImage),
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 20),
+                  // 데이터 기반으로 화면 빌드
+                  ...daysOrder.where((day) => groupedData.containsKey(day)).map((day) {
+                    return _buildDaySection(context, day, groupedData[day]!);
+                  }).toList(),
 
-                // 업데이트 정보 및 감사 문구
-                Text("Update: 2025.08",
-                    style: TextStyle(fontSize: AppSizes.fontMainButton, fontWeight: FontWeight.bold, color: Colors.black)),
-                const SizedBox(height: 12),
-                Text(
-                  "모든 생명의 전화 상담자 선생님들의\n봉사와 희생에 언제나 감사드립니다.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: AppSizes.fontMid, color: Colors.black, height: 1.4),
-                ),
-                const SizedBox(height: 30),
-
-                // 요일별 섹션 빌드
-                ...weeklySchedule.map((dayData) => _buildDaySection(context, dayData)).toList(),
-
-                const SizedBox(height: 50),
-              ],
+                  const SizedBox(height: 50),
+                ],
+              ),
             ),
           ),
         ),
@@ -82,8 +119,7 @@ class ScheduleScreen extends StatelessWidget {
     );
   }
 
-  // 요일 섹션 빌더 (기존의 해결된 width 로직 유지)
-  Widget _buildDaySection(BuildContext context, Map<String, dynamic> dayData) {
+  Widget _buildDaySection(BuildContext context, String day, List<ScheduleModel> slots) {
     return Column(
       children: [
         Container(
@@ -95,13 +131,13 @@ class ScheduleScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSizes.radiusCard),
           ),
           child: Center(
-            child: Text(dayData["day"],
-                style: const TextStyle(fontSize: AppSizes.fontMainButton, fontWeight: FontWeight.bold, color: Colors.black)),
+            child: Text(day, style: const TextStyle(fontSize: AppSizes.fontMainButton, fontWeight: FontWeight.bold, color: Colors.black)),
           ),
         ),
+        ...slots.map((slot) {
+          // 핵심: 서버에서 준 currentOrderNo와 슬롯의 order가 일치하는지 확인
+          bool isCurrent = slot.order == _currentOrderNo;
 
-        ...dayData["slots"].map<Widget>((slot) {
-          bool isCurrent = slot["isCurrent"] ?? false;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
@@ -110,8 +146,8 @@ class ScheduleScreen extends StatelessWidget {
                   flex: 3,
                   child: _buildScheduleBox(
                       context,
-                      slot["time"],
-                      isCurrent ? AppColors.gradTextboxGreen : AppColors.gradBtnGray
+                      slot.time,
+                      isCurrent ? AppColors.gradTextboxGreen : AppColors.gradBtnGray // 하이라이트 적용
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -119,8 +155,8 @@ class ScheduleScreen extends StatelessWidget {
                   flex: 2,
                   child: _buildScheduleBox(
                       context,
-                      slot["name"],
-                      isCurrent ? AppColors.gradTextboxGreen : AppColors.gradBtnGray
+                      slot.accountName,
+                      isCurrent ? AppColors.gradTextboxGreen : AppColors.gradBtnGray // 하이라이트 적용
                   ),
                 ),
               ],
@@ -132,7 +168,6 @@ class ScheduleScreen extends StatelessWidget {
     );
   }
 
-  // 텍스트 박스 위젯
   Widget _buildScheduleBox(BuildContext context, String text, Gradient gradient) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 15),

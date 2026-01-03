@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
+import '../models/schedule_model.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -151,5 +153,51 @@ class ApiService {
       print("상담원 선택 업데이트 실패: $e");
       return false;
     }
+  }
+
+  // ApiService 클래스 내부에 추가
+  Future<List<ScheduleModel>> getAllSchedules() async {
+    try {
+      final response = await _dio.get('/orders/all');
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data;
+        return data.map((item) => ScheduleModel.fromJson(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("시간표 로드 실패: $e");
+      return [];
+    }
+  }
+
+  // core/network/api_service.dart 내부 예상 코드
+  Future<int?> getCurrentOrderNo() async {
+    try {
+      // 1. 기기의 시차(Offset)를 구함 (시드니면 +660 등)
+      int offsetMinutes = DateTime.now().timeZoneOffset.inMinutes;
+
+      // 2. 서버에 offset 인자를 태워 보냄
+      final response = await _dio.get(
+        '/orders/current-no',
+        queryParameters: {'offset': offsetMinutes},
+      );
+
+      return response.data['currentOrderNo'];
+    } catch (e) {
+      print("에러 발생: $e");
+      return null;
+    }
+  }
+
+  Future<DateTime?> getLastUpdatedDate() async {
+    try {
+      final response = await _dio.get('/orders/last-updated');
+      if (response.statusCode == 200) {
+        return DateTime.parse(response.data['lastUpdated']);
+      }
+    } catch (e) {
+      print("업데이트 날짜 로드 실패: $e");
+    }
+    return null;
   }
 }
