@@ -140,6 +140,42 @@ class _MyActivityState extends State<MyActivity> {
     );
   }
 
+  // 삭제 확인 다이얼로그
+  void _confirmDelete(String activityId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("활동 기록 삭제"),
+        content: const Text("이 활동 기록을 정말 삭제하시겠습니까?\n총 활동 시간에서도 차감됩니다."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("취소")),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // 다이얼로그 닫기
+              setState(() => _isLoading = true);
+
+              bool success = await _apiService.deleteActivity(activityId);
+
+              if (success) {
+                // 삭제 성공 시 리스트 새로고침
+                await _fetchActivityData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("기록이 삭제되었습니다."))
+                );
+              } else {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("삭제에 실패했습니다."))
+                );
+              }
+            },
+            child: const Text("삭제", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ... (상단 바 _buildTopBar 생략 - 기존 코드와 동일)
 
   Widget _buildSummarySection() {
@@ -158,6 +194,8 @@ class _MyActivityState extends State<MyActivity> {
   // 카드 위젯: DB 필드명(start_time, end_time 등)에 맞춰 수정
   Widget _buildActivityCard(BuildContext context, dynamic data) {
     // 날짜 포맷팅 함수
+    final String activityId = data['id']; // 서버에서 받은 ID
+
     String formatDateTime(dynamic date) {
       if (date == null) return "-";
       try {
@@ -168,27 +206,30 @@ class _MyActivityState extends State<MyActivity> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
-      child: HighlightButton(
-        onTap: () {},
-        defaultGradient: AppColors.gradBtnGray,
-        highlightGradient: AppColors.gradBtnClick,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusCard)),
-        child: Container(
-          width: AppSizes.wPercent(context, AppSizes.wBigCard),
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 백엔드 필드명 'start', 'end', 'duration'에 맞춤
-              _buildCardRow("시작:", formatDateTime(data['start'])),
-              const SizedBox(height: 6),
-              _buildCardRow("종료:", formatDateTime(data['end'])),
-              const SizedBox(height: 6),
-              _buildCardRow("시간:", data['duration']?.toString() ?? "-"),
-            ],
+        child: GestureDetector( // 롱 프레스를 감지하기 위해 GestureDetector 사용
+          onLongPress: () => _confirmDelete(activityId),
+          child: HighlightButton(
+            onTap: () {},
+            defaultGradient: AppColors.gradBtnGray,
+            highlightGradient: AppColors.gradBtnClick,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusCard)),
+            child: Container(
+              width: AppSizes.wPercent(context, AppSizes.wBigCard),
+              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 백엔드 필드명 'start', 'end', 'duration'에 맞춤
+                  _buildCardRow("시작:", formatDateTime(data['start'])),
+                  const SizedBox(height: 6),
+                  _buildCardRow("종료:", formatDateTime(data['end'])),
+                  const SizedBox(height: 6),
+                  _buildCardRow("시간:", data['duration']?.toString() ?? "-"),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
     );
   }
 

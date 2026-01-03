@@ -226,4 +226,14 @@ class ApiService {
       return false;
     }
   }
+
+  Future<bool> deleteActivity(String activityId) async {
+    try {
+      final response = await _dio.delete('/current/activity/$activityId');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print("활동 삭제 실패: $e");
+      return false;
+    }
+  }
 }

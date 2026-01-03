@@ -76,7 +76,7 @@ class _AdminScreenState extends State<AdminScreen> {
     // 로직 2 & 3: 파란 버튼 활성화 조건
     // - 현재 운영자 모드인 경우: 누구나 클릭 가능
     // - 현재 운영자 모드가 아닌 경우: 운영자(isChief)만 클릭 가능
-    bool canDisableAdmin = _isAdminModeActive || (widget.user?.isChief ?? false);
+    bool canDisableAdmin = _isAdminModeActive ;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -116,9 +116,9 @@ class _AdminScreenState extends State<AdminScreen> {
                   _buildActionButton(
                     context,
                     "운영자 모드 해제",
-                    canDisableAdmin && _isAdminModeActive ? AppColors.gradBtnBlue : AppColors.gradBtnGray,
+                    canDisableAdmin ? AppColors.gradBtnBlue : AppColors.gradBtnGray,
                         () => _handleToggleMode(false),
-                    isEnabled: canDisableAdmin && _isAdminModeActive,
+                    isEnabled: canDisableAdmin,
                   ),
                   const SizedBox(height: 40),
                 ],

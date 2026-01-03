@@ -63,7 +63,13 @@ class _MyPageState extends State<MyPage> {
   }
   // 전화번호 수정 다이얼로그
   void _showUpdatePhoneDialog() {
-    final TextEditingController _phoneController = TextEditingController(text: _displayPhone);
+    // [수정] 화면에 표시된 +61 번호를 다이얼로그에서는 0으로 바꿔서 보여줌
+    String initialText = _displayPhone ?? "";
+    if (initialText.startsWith('+61')) {
+      initialText = initialText.replaceFirst('+61', '0');
+    }
+
+    final TextEditingController _phoneController = TextEditingController(text: initialText);
 
     showDialog(
       context: context,
@@ -72,16 +78,18 @@ class _MyPageState extends State<MyPage> {
         content: TextField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(hintText: "새로운 전화번호 입력"),
+          decoration: const InputDecoration(
+            hintText: "새로운 전화번호 입력",
+            helperText: "예: 0412345678",
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("취소")),
-
           ElevatedButton(
             onPressed: () async {
-              final newPhone = _phoneController.text;
+              // [수정] 사용자가 입력한 0... 번호를 그대로 서버에 보냄 (서버에서 +61로 변환)
+              final newPhone = _phoneController.text.trim();
 
-              // 이제 success 여부가 아니라, 서버가 변환한 '문자열'을 기다립니다.
               final serverFormattedPhone = await _apiService.updatePhoneNumber(
                   widget.user!.accountId,
                   newPhone
@@ -89,7 +97,7 @@ class _MyPageState extends State<MyPage> {
 
               if (serverFormattedPhone != null && mounted) {
                 setState(() {
-                  // 핵심: 사용자가 입력한 newPhone이 아니라, 서버가 준 번호를 반영!
+                  // 서버가 저장 후 반환한 +61... 형태의 번호를 다시 화면 변수에 반영
                   _displayPhone = serverFormattedPhone;
                 });
                 Navigator.pop(context);
@@ -97,7 +105,6 @@ class _MyPageState extends State<MyPage> {
                     const SnackBar(content: Text("번호가 수정되었습니다."))
                 );
               } else {
-                // 실패 처리
                 ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("번호 수정에 실패했습니다."))
                 );
@@ -105,7 +112,6 @@ class _MyPageState extends State<MyPage> {
             },
             child: const Text("저장"),
           ),
-
         ],
       ),
     );
