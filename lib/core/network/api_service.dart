@@ -61,8 +61,9 @@ class ApiService {
   // [수정] URL 경로를 baseUrl 기반 상대 경로로 통일
   Future<Map<String, dynamic>?> getMyActivities(String accountId) async {
     try {
-      // 절대경로 중복 방지를 위해 상대경로 사용
-      final response = await _dio.get('/current/my-activities/$accountId');
+      // 기존: '/current/my-activities/$accountId' -> 404 에러 발생
+      // 수정: 백엔드에서 토큰으로 식별하므로 ID를 붙이지 않습니다.
+      final response = await _dio.get('/current/my-activities');
       if (response.statusCode == 200) {
         return response.data;
       }

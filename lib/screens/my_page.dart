@@ -191,7 +191,10 @@ class _MyPageState extends State<MyPage> {
           _buildActionButton(context, "내 활동 상세보기", AppColors.gradBtnBlue, () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const MyActivity()),
+              MaterialPageRoute(
+                // 여기서 widget.user를 반드시 넘겨줘야 MyActivity에서 인식합니다.
+                builder: (context) => MyActivity(user: widget.user),
+              ),
             );
           }),
           const SizedBox(height: 20),
