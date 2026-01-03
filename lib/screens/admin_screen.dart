@@ -6,94 +6,152 @@ import '../core/widgets/highlight_button.dart';
 import '../core/network/api_service.dart';
 import '../core/models/user_model.dart';
 
-class AdminScreen extends StatelessWidget {
-  // 2. user 변수 추가 및 생성자 수정
+class AdminScreen extends StatefulWidget {
   final UserModel? user;
-  const AdminScreen({super.key, this.user}); // {super.key} 뒤에 this.user 추가
+  const AdminScreen({super.key, this.user});
+
+  @override
+  State<AdminScreen> createState() => _AdminScreenState();
+}
+
+class _AdminScreenState extends State<AdminScreen> {
+  final ApiService _apiService = ApiService();
+  bool _isAdminModeActive = false; // 현재 서버의 운영자 모드 상태
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentStatus();
+  }
+
+  // 현재 운영자 모드 상태를 서버에서 가져옴
+  Future<void> _fetchCurrentStatus() async {
+    final status = await _apiService.getHandoverStatus();
+    if (status != null && mounted) {
+      setState(() {
+        _isAdminModeActive = status['isAdminMode'] ?? false;
+      });
+    }
+  }
+
+  // 모드 전환 함수
+  Future<void> _handleToggleMode(bool targetOn) async {
+    // 1. 유저 ID가 있는지 먼저 체크 (방어 코드)
+    final String? userId = widget.user?.accountId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // 2. apiService에 targetOn(상태)과 userId(내 ID)를 함께 전달
+    final success = await _apiService.toggleAdminMode(targetOn, userId);
+
+    if (success) {
+      setState(() => _isAdminModeActive = targetOn);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(targetOn
+                ? "운영자 점거 모드가 활성화되었습니다."
+                : "운영자 모드가 해제되고 시간표가 복구되었습니다.")
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("요청 처리에 실패했습니다. 권한을 확인하세요.")),
+      );
+    }
+    setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 로직 1: 빨간 버튼은 운영자(isChief)만 활성화
+    bool canEnableAdmin = widget.user?.isChief ?? false;
+
+    // 로직 2 & 3: 파란 버튼 활성화 조건
+    // - 현재 운영자 모드인 경우: 누구나 클릭 가능
+    // - 현재 운영자 모드가 아닌 경우: 운영자(isChief)만 클릭 가능
+    bool canDisableAdmin = _isAdminModeActive || (widget.user?.isChief ?? false);
+
     return Scaffold(
-      backgroundColor: Colors.transparent, // 배경 투명 처리
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Container(
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 10),
-
-              // 1. 로고 (MyPage와 크기/배치 통일)
-              Image.asset(
-                AppAssets.logoImg,
-                width: AppSizes.wPercent(context, AppSizes.wImage),
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 30),
-
-              // 2. 운영자 모드 켜기 설명 (검정색, fontMid 적용)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Text(
-                  "현재 상담자 및 다음 상담자 착신번호를\n운영자의 전화번호로 지정합니다.\n운영자만 클릭할 수 있습니다.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontMid,
-                    color: Colors.black, // 주황색에서 검정색으로 변경
-                    height: 1.5,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  Image.asset(
+                    AppAssets.logoImg,
+                    width: AppSizes.wPercent(context, AppSizes.wImage),
+                    fit: BoxFit.contain,
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
+                  const SizedBox(height: 30),
 
-              // 3. 운영자 모드 켜기 버튼 (gradBtnRed 적용)
-              _buildActionButton(
-                  context,
-                  "운영자 모드 켜기",
-                  AppColors.gradBtnRed,
-                      () => print("운영자 모드 켜기 클릭")
-              ),
-              const SizedBox(height: 40),
-
-              // 4. 운영자 모드 해제 설명 (fontMid 적용)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Text(
-                  "주간 시간표로부터, 현재 시간을 기준으로\n 현재 및 다음 상담원을 찾아 배정합니다.\n운영자 모드가 켜져 있는 상태일 때만\n상담원 누구나 클릭할 수 있습니다.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontMid,
-                    color: Colors.black,
-                    height: 1.5,
+                  // 운영자 모드 켜기 섹션
+                  _buildDescription("현재 상담자 및 다음 상담자 착신번호를\n운영자의 전화번호로 지정합니다.\n운영자만 클릭할 수 있습니다."),
+                  const SizedBox(height: 20),
+                  _buildActionButton(
+                    context,
+                    "운영자 모드 켜기",
+                    canEnableAdmin && !_isAdminModeActive ? AppColors.gradBtnRed : AppColors.gradBtnGray, // 비활성시 회색
+                        () => _handleToggleMode(true),
+                    isEnabled: canEnableAdmin && !_isAdminModeActive,
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
 
-              // 5. 운영자 모드 해제 버튼 (MyPage와 동일한 gradBtnBlue 적용)
-              _buildActionButton(
-                  context,
-                  "운영자 모드 해제",
-                  AppColors.gradBtnBlue,
-                      () => print("운영자 모드 해제 클릭")
+                  const SizedBox(height: 40),
+
+                  // 운영자 모드 해제 섹션
+                  _buildDescription("주간 시간표로부터, 현재 시간을 기준으로\n 현재 및 다음 상담원을 찾아 배정합니다.\n운영자 모드가 켜져 있는 상태일 때만\n상담원 누구나 클릭할 수 있습니다."),
+                  const SizedBox(height: 20),
+                  _buildActionButton(
+                    context,
+                    "운영자 모드 해제",
+                    canDisableAdmin && _isAdminModeActive ? AppColors.gradBtnBlue : AppColors.gradBtnGray,
+                        () => _handleToggleMode(false),
+                    isEnabled: canDisableAdmin && _isAdminModeActive,
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescription(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: AppSizes.fontMid,
+          color: Colors.black,
+          height: 1.5,
         ),
       ),
     );
   }
 
-  // MyPage의 버튼 스타일과 100% 동일한 버튼 빌더
-  Widget _buildActionButton(BuildContext context, String text, Gradient gradient, VoidCallback onPressed) {
+  Widget _buildActionButton(BuildContext context, String text, Gradient gradient, VoidCallback onPressed, {bool isEnabled = true}) {
     return HighlightButton(
-      onTap: onPressed,
+      onTap: isEnabled ? onPressed : () {}, // 비활성화 시 작동 안함
       defaultGradient: gradient,
       highlightGradient: AppColors.gradBtnClick,
       shape: const StadiumBorder(),
-      // 기존에 사용하던 그림자 효과 복구
       shadows: [
         BoxShadow(
           color: Colors.black.withOpacity(0.2),
@@ -105,11 +163,10 @@ class AdminScreen extends StatelessWidget {
         width: AppSizes.wPercent(context, AppSizes.wMainButton),
         height: AppSizes.hMainButton,
         alignment: Alignment.center,
-        // 여기에 Container 자체 decoration을 넣으면 중복되어 에러가 날 수 있으니 비워둡니다.
         child: Text(
           text,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isEnabled ? Colors.white : Colors.white60,
             fontSize: AppSizes.fontMainButton,
             fontWeight: FontWeight.bold,
           ),

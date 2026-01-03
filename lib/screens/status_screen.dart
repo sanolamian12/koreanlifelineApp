@@ -38,6 +38,13 @@ class _StatusScreenState extends State<StatusScreen> {
     });
     _fetchInitialData();
   }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 전환되어 다시 포커스될 때마다 서버에서 최신 정보를 불러옵니다.
+    _fetchInitialData();
+  }
+
 
   @override
   void dispose() {

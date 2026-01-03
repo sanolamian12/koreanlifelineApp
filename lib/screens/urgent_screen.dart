@@ -13,6 +13,7 @@ class UrgentScreen extends StatefulWidget {
 
   @override
   State<UrgentScreen> createState() => _UrgentScreenState();
+
 }
 
 class _UrgentScreenState extends State<UrgentScreen> {
@@ -28,6 +29,13 @@ class _UrgentScreenState extends State<UrgentScreen> {
     super.initState();
     _fetchInitialData();
   }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 전환되어 다시 포커스될 때마다 서버에서 최신 정보를 불러옵니다.
+    _fetchInitialData();
+  }
+
 
   // 1. 초기 데이터 로드: 화면 진입 시 항상 '현재 상담원' 정보로 상/하 박스 통일
   Future<void> _fetchInitialData() async {
@@ -37,14 +45,19 @@ class _UrgentScreenState extends State<UrgentScreen> {
       if (mounted && data != null) {
         setState(() {
           _currentData = data['currentCounselor'];
-          // 가이드대로 진입 시에는 상단(현재)과 하단(변경될) 박스 정보를 동일하게 세팅 (Temp 개념)
           _tempSelectedCounselor = _currentData;
 
-          // 권한 체크
+          // 권한 체크 수정
           final bool isChief = widget.user?.isChief ?? false;
           final String? myId = widget.user?.accountId;
-          final String? currentCounselorId = _currentData?['id'];
-          _isAuthorized = isChief || (myId != null && myId == currentCounselorId);
+
+          // [수정 포인트] 서버 응답에 따라 'account_id' 또는 'id'를 모두 확인
+          final String? currentCounselorId = _currentData?['account_id'] ?? _currentData?['id'];
+
+          // 디버깅을 위해 로그를 찍어보세요 (선택사항)
+          print("Urgent Debug: My ID($myId) / Server Counselor ID($currentCounselorId)");
+
+          _isAuthorized = isChief || (myId != null && currentCounselorId != null && myId == currentCounselorId);
 
           _isLoading = false;
         });

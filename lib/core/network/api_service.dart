@@ -93,15 +93,21 @@ class ApiService {
   // [수정] 이제 Interceptor가 토큰을 자동으로 헤더에 넣어줍니다.
   Future<Map<String, dynamic>?> getHandoverStatus() async {
     try {
-      // NestJS의 @Get('status')와 매칭
-      final response = await _dio.get('/current/status');
+      // 1. 기기의 시차(Offset)를 구함 (시드니 AEDT 기준 +660 등)
+      int offsetMinutes = DateTime.now().timeZoneOffset.inMinutes;
+
+      // 2. queryParameters에 offset을 실어서 보냄
+      final response = await _dio.get(
+        '/current/status',
+        queryParameters: {'offset': offsetMinutes}, // 추가됨!
+      );
+
       if (response.statusCode == 200) {
-        print("상태 조회 성공: ${response.data}");
         return response.data;
       }
       return null;
     } catch (e) {
-      print("상태 조회 실패 (토큰 확인 필요): $e");
+      print("상태 조회 실패: $e");
       return null;
     }
   }
@@ -199,5 +205,24 @@ class ApiService {
       print("업데이트 날짜 로드 실패: $e");
     }
     return null;
+  }
+
+  Future<bool> toggleAdminMode(bool isOn, String userId) async { // userId 추가
+    try {
+      int offset = DateTime.now().timeZoneOffset.inMinutes;
+
+      final response = await _dio.post(
+        '/current/toggle-admin',
+        data: {
+          'isOn': isOn,
+          'offset': offset,
+          'accountId': userId, // 서버로 ID 전송
+        },
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("운영자 모드 전환 실패: $e");
+      return false;
+    }
   }
 }

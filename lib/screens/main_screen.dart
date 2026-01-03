@@ -37,6 +37,8 @@ class _MainScreenState extends State<MainScreen> {
   late bool _isLoggedIn;
   int _selectedIndex = 0;
   final ApiService _apiService = ApiService(); // ApiService 인스턴스 추가
+  // [수정] 현재 세션의 유저를 추적할 변수 추가
+  UserModel? _currentUser;
 
   late List<Widget> _pages; // 변수 선언만 해둡니다.
 
@@ -45,27 +47,43 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _isLoggedIn = widget.isLoggedIn;
     _selectedIndex = widget.initialIndex;
+    // 초기 유저 설정
+    _currentUser = widget.user;
     _initPages();
   }
+
+  // [수정] 이제 항상 _currentUser를 사용하도록 변경
+  void _initPages() {
+    _pages = [
+      MyPage(key: UniqueKey(), user: _currentUser),
+      StatusScreen(key: UniqueKey(), user: _currentUser),
+      UrgentScreen(key: UniqueKey(), user: _currentUser),
+      ScheduleScreen(key: UniqueKey(), user: _currentUser),
+      AdminScreen(key: UniqueKey(), user: _currentUser),
+    ];
+  }
+
+  // didUpdateWidget도 수정 (부모 위젯에서 유저를 새로 던져줄 경우 대비)
   @override
   void didUpdateWidget(MainScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 전달받은 user 정보가 바뀌었다면 페이지 리스트를 다시 생성
     if (widget.user != oldWidget.user) {
-      _initPages();
+      setState(() {
+        _currentUser = widget.user;
+        _initPages();
+      });
     }
   }
-
-    // 2. initState에서 widget.user를 각 페이지에 전달하며 초기화합니다.
-  void _initPages() {
-    _pages = [
-      MyPage(user: widget.user),
-      StatusScreen(user: widget.user),
-      UrgentScreen(user: widget.user),    // <-- 수정됨: widget.user 추가
-      ScheduleScreen(user: widget.user),  // <-- 향후 권한 체크를 위해 추가
-      AdminScreen(user: widget.user),
-    ];
+  // [수정] 로그인 성공 시 _currentUser를 업데이트
+  void _onLoginSuccess(UserModel newUser) {
+    setState(() {
+      _isLoggedIn = true;
+      _currentUser = newUser; // 중요: 전역 변수에 저장
+      _initPages();           // 저장된 유저로 페이지 재생성
+      _selectedIndex = 0;
+    });
   }
+
 
   // 2.1 이용 문의 클릭 시 노션 이동 (수정됨)
   Future<void> _launchContactUrl() async {
@@ -75,21 +93,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // 2.2 로그인 성공 후 로직 (UserModel 인식됨)
-  void _onLoginSuccess(UserModel newUser) {
-    setState(() {
-      _isLoggedIn = true;
 
-      _pages = [
-        MyPage(user: newUser),
-        StatusScreen(user: newUser),
-        UrgentScreen(user: newUser),    // <-- 수정됨: newUser 추가
-        ScheduleScreen(user: newUser),  // <-- 추가
-        const AdminScreen(),            // (AdminScreen 생성자에 user가 있다면 같이 추가해주세요)
-      ];
-      _selectedIndex = 0;
-    });
-  }
 
   // [추가] 로그인 팝업 다이얼로그 메서드
   void _showLoginDialog() {
@@ -234,8 +238,14 @@ class _MainScreenState extends State<MainScreen> {
               bool isSelected = _selectedIndex == index && _isLoggedIn;
               return GestureDetector(
                 onTap: _isLoggedIn ? () {
-                  setState(() => _selectedIndex = index);
+                  setState(() {
+                    _selectedIndex = index;
+                    // [핵심] 탭이 바뀔 때마다 페이지 리스트를 새로 생성하여
+                    // 각 스크린의 initState가 다시 실행되도록 강제함
+                    _initPages();
+                  });
                 } : null,
+
                 child: Opacity(
                   opacity: _isLoggedIn ? 1.0 : 0.4,
                   child: Container(
