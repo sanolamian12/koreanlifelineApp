@@ -128,20 +128,17 @@ class _UrgentScreenState extends State<UrgentScreen> {
             children: [
               const SizedBox(height: 10),
               Image.asset(
-                AppAssets.logoImg,
-                width: AppSizes.wPercent(context, AppSizes.wImage),
-                fit: BoxFit.contain,
-              ),
+                AppAssets.logoImg, width: AppSizes.wPercent(context, AppSizes.wImage), fit: BoxFit.contain,),
               const SizedBox(height: 20),
               const Text(
                 "현재 상담원을 즉시 변경합니다.",
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppSizes.fontBig,
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
               // 현재 상담원 (Red)
               _buildInfoCard(
@@ -170,7 +167,7 @@ class _UrgentScreenState extends State<UrgentScreen> {
               // 버튼 섹션: 권한 없으면 null 전달하여 비활성화
               _buildActionButton(
                   context,
-                  "상담원 선택",
+                  "현재 상담원 교체",
                   _isAuthorized ? AppColors.gradBtnBlue : AppColors.gradBtnGray,
                   _isAuthorized ? _onSelectCounselorPressed : null
               ),
@@ -192,7 +189,7 @@ class _UrgentScreenState extends State<UrgentScreen> {
   Widget _buildInfoCard(BuildContext context, {required Gradient gradient, required Map<String, String> data}) {
     return Container(
       width: AppSizes.wPercent(context, AppSizes.wMainButton),
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 25),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
       decoration: BoxDecoration(
         gradient: gradient,
         borderRadius: BorderRadius.circular(AppSizes.radiusCard),

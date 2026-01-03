@@ -138,7 +138,7 @@ class _StatusScreenState extends State<StatusScreen> {
             // 다른 상담원 선택 버튼
             _buildActionButton(
               context,
-              "다른 상담원 선택",
+              "다음 상담원 교체",
               isAuthorized ? AppColors.gradBtnBlue : AppColors.gradBtnGray,
               isAuthorized ? _onSelectCounselorPressed : null, // 권한 있을 때만 활성화
             ),
@@ -160,7 +160,7 @@ class _StatusScreenState extends State<StatusScreen> {
 
   // --- 기존 헬퍼 위젯들 (동일) ---
   Widget _buildDateRow(String date, String time) {
-    TextStyle style = const TextStyle(fontSize: 22, color: Color(0xFFE67E22), fontWeight: FontWeight.bold);
+    TextStyle style = const TextStyle(fontSize: AppSizes.fontBig, color: Colors.black, fontWeight: FontWeight.bold);
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text("$date ", style: style), Text(time, style: style)]);
   }
 
@@ -168,14 +168,22 @@ class _StatusScreenState extends State<StatusScreen> {
     return Container(
       width: AppSizes.wPercent(context, AppSizes.wMainButton),
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-      decoration: BoxDecoration(gradient: gradient, borderRadius: BorderRadius.circular(AppSizes.radiusCard)),
+      decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 3))
+          ],
+      ),
       child: Column(
         children: data.entries.map((e) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            SizedBox(width: 60, child: Text("${e.key}: ", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-            Expanded(child: Text(e.value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-          ]),
+          child: Row(
+            children: [
+              Text("${e.key}: ", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Expanded(child: Text(e.value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            ],
+          ),
         )).toList(),
       ),
     );
@@ -187,6 +195,9 @@ class _StatusScreenState extends State<StatusScreen> {
       defaultGradient: gradient,
       highlightGradient: AppColors.gradBtnClick,
       shape: const StadiumBorder(),
+      shadows: [
+        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 4))
+      ],
       child: Container(
         width: AppSizes.wPercent(context, AppSizes.wMainButton),
         height: AppSizes.hMainButton,
