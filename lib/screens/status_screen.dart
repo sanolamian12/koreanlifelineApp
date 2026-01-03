@@ -75,7 +75,7 @@ class _StatusScreenState extends State<StatusScreen> {
     // Navigator.push가 완료될 때까지 await로 대기합니다.
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SelectCounselor()),
+      MaterialPageRoute(builder: (context) => const SelectCounselor(isDirectUpdate: true)),
     );
 
     // SelectCounselor에서 Navigator.pop(context, true)가 호출되어 넘어온 경우

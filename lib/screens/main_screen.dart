@@ -59,11 +59,11 @@ class _MainScreenState extends State<MainScreen> {
     // 2. initState에서 widget.user를 각 페이지에 전달하며 초기화합니다.
   void _initPages() {
     _pages = [
-      MyPage(user: widget.user),        // user가 null이어도 MyPage가 처리함
+      MyPage(user: widget.user),
       StatusScreen(user: widget.user),
-      const UrgentScreen(),
-      const ScheduleScreen(),
-      const AdminScreen(),
+      UrgentScreen(user: widget.user),    // <-- 수정됨: widget.user 추가
+      ScheduleScreen(user: widget.user),  // <-- 향후 권한 체크를 위해 추가
+      AdminScreen(user: widget.user),
     ];
   }
 
@@ -78,17 +78,15 @@ class _MainScreenState extends State<MainScreen> {
   // 2.2 로그인 성공 후 로직 (UserModel 인식됨)
   void _onLoginSuccess(UserModel newUser) {
     setState(() {
-      // 핵심 수정 사항: 로그인 상태를 true로 변경해야 화면이 전환됩니다!
       _isLoggedIn = true;
 
       _pages = [
         MyPage(user: newUser),
         StatusScreen(user: newUser),
-        const UrgentScreen(),
-        const ScheduleScreen(),
-        const AdminScreen(),
+        UrgentScreen(user: newUser),    // <-- 수정됨: newUser 추가
+        ScheduleScreen(user: newUser),  // <-- 추가
+        const AdminScreen(),            // (AdminScreen 생성자에 user가 있다면 같이 추가해주세요)
       ];
-      // 로그인 성공 시 바로 마이페이지(0번)를 보여주도록 인덱스 설정
       _selectedIndex = 0;
     });
   }

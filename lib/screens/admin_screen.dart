@@ -3,9 +3,13 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_sizes.dart';
 import '../core/constants/app_assets.dart';
 import '../core/widgets/highlight_button.dart';
+import '../core/network/api_service.dart';
+import '../core/models/user_model.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key});
+  // 2. user 변수 추가 및 생성자 수정
+  final UserModel? user;
+  const AdminScreen({super.key, this.user}); // {super.key} 뒤에 this.user 추가
 
   @override
   Widget build(BuildContext context) {

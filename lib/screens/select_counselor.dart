@@ -6,7 +6,9 @@ import '../core/widgets/highlight_button.dart';
 import '../core/network/api_service.dart';
 
 class SelectCounselor extends StatefulWidget {
-  const SelectCounselor({super.key});
+  // [추가] 즉시 업데이트 여부를 결정하는 플래그
+  final bool isDirectUpdate;
+  const SelectCounselor({super.key, this.isDirectUpdate = true}); // 기본값은 true (기존 화면들 보호)
 
   @override
   State<SelectCounselor> createState() => _SelectCounselorState();
@@ -33,15 +35,21 @@ class _SelectCounselorState extends State<SelectCounselor> {
   }
 
   // 상담원 선택 시 처리
+  // [수정] 선택 로직 분기 처리
   Future<void> _onSelect(Map<String, dynamic> counselor) async {
-    final success = await _apiService.updateSelectedCounselor(counselor['account_id']);
-    if (success && mounted) {
-      // 성공 시 true를 가지고 이전 화면으로 복귀
-      Navigator.pop(context, true);
+    if (widget.isDirectUpdate) {
+      // 1. StatusScreen 방식: 즉시 서버 업데이트
+      final success = await _apiService.updateSelectedCounselor(counselor['account_id']);
+      if (success && mounted) {
+        Navigator.pop(context, true); // 성공 여부 반환
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("상담원 변경에 실패했습니다.")),
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("상담원 변경에 실패했습니다.")),
-      );
+      // 2. UrgentScreen 방식: 업데이트 없이 데이터만 들고 복귀
+      Navigator.pop(context, counselor); // 선택된 맵 정보 반환
     }
   }
 
