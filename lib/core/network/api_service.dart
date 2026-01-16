@@ -6,7 +6,8 @@ import '../models/schedule_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://3.26.146.6:3000";
+  //static const String baseUrl = "http://3.26.146.6:3000";
+  static const String baseUrl = "http://13.210.139.139:3000";
 
   // 모든 인스턴스가 공유하도록 토큰을 static으로 관리
   static String? _accessToken;
