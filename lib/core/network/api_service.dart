@@ -237,4 +237,18 @@ class ApiService {
       return false;
     }
   }
+  // [긴급 전환] 현재 상담원 즉시 강제 교체 (백엔드의 force-change-current 호출)
+  Future<bool> forceChangeCurrent(String targetId) async {
+    try {
+      // 컨트롤러의 @Post('force-change-current')와 일치시킴
+      final response = await _dio.post(
+        '/current/force-change-current',
+        data: {'targetId': targetId},
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("현재 상담원 즉시 교체 실패: $e");
+      return false;
+    }
+  }
 }

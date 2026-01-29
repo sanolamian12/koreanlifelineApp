@@ -89,8 +89,12 @@ class _UrgentScreenState extends State<UrgentScreen> {
   Future<void> _handleUrgentHandover() async {
     if (_tempSelectedCounselor == null || _currentData == null) return;
 
+    // 선택된 ID 가져오기
+    final String targetId = _tempSelectedCounselor!['id'];
+    final String currentId = _currentData?['account_id'] ?? _currentData?['id'];
+
     // 만약 선택된 사람이 현재 사람과 같다면 실행 방지
-    if (_tempSelectedCounselor!['id'] == _currentData!['id']) {
+    if (targetId == currentId) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("현재 상담원과 동일합니다. 다른 분을 선택해주세요.")),
       );
@@ -100,22 +104,17 @@ class _UrgentScreenState extends State<UrgentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Step 1: 다음 대기자를 내가 고른 사람으로 업데이트 (PATCH)
-      final patchSuccess = await _apiService.updateSelectedCounselor(_tempSelectedCounselor!['id']);
+      // [수정 포인트] 새롭게 연결한 forceChangeCurrent API 호출
+      final success = await _apiService.forceChangeCurrent(targetId);
 
-      if (patchSuccess) {
-        // Step 2: 업데이트된 대기자를 현재 상담원으로 즉시 밀어넣기 (POST)
-        final postSuccess = await _apiService.doHandover();
-
-        if (postSuccess && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("상담원 착신 전환이 완료되었습니다.")),
-          );
-          // 완료 후 서버 정보를 다시 불러와 UI 갱신 (다시 상/하 박스 같아짐)
-          await _fetchInitialData();
-        }
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("현재 상담원이 즉시 교체되었습니다.")),
+        );
+        // 완료 후 서버 정보를 다시 불러와 UI를 최신화합니다.
+        await _fetchInitialData();
       } else {
-        throw Exception("상담원 예약 업데이트 실패");
+        throw Exception("서버 응답 오류");
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
