@@ -10,5 +10,5 @@ class ApiConstants {
   // Current 관련 경로
   static const String status = '$baseUrl/current/status';
 
-  static const String contactUsUrl = 'https://your-notion-page-url';
+  static const String contactUsUrl = 'https://boundless-handball-42e.notion.site/2fca0ac1da03816799f7ef4eed780f8a?pvs=105';
 }
