@@ -84,15 +84,23 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-
-  // 2.1 이용 문의 클릭 시 노션 이동 (수정됨)
+// 2.1 이용 문의 클릭 시 노션 이동 (수정됨)
   Future<void> _launchContactUrl() async {
     final Uri url = Uri.parse(ApiConstants.contactUsUrl);
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+
+    // 심사 통과를 위해 externalApplication 대신 inAppWebView를 사용합니다.
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.inAppWebView, // 앱 내부 브라우저로 열기
+      browserConfiguration: const BrowserConfiguration(showTitle: true), // (선택) 제목 표시
+      webViewConfiguration: const WebViewConfiguration(
+        enableJavaScript: true, // 노션은 자바스크립트가 필수입니다.
+        enableDomStorage: true,
+      ),
+    )) {
       throw Exception('Could not launch $url');
     }
   }
-
 
 
   // [추가] 로그인 팝업 다이얼로그 메서드
