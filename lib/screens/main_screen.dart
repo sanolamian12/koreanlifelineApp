@@ -104,6 +104,7 @@ class _MainScreenState extends State<MainScreen> {
 
 
   // [추가] 로그인 팝업 다이얼로그 메서드
+  // [수정] 로그인 팝업 다이얼로그 메서드
   void _showLoginDialog() {
     final TextEditingController idController = TextEditingController();
     final TextEditingController pwController = TextEditingController();
@@ -133,13 +134,29 @@ class _MainScreenState extends State<MainScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final user = await _apiService.login(idController.text, pwController.text);
-              if (user != null) {
-                Navigator.pop(context); // 팝업 닫기
-                _onLoginSuccess(user);  // 성공 로직 실행
-              } else {
+              try {
+                // 1. 로그인 시도
+                final user = await _apiService.login(idController.text.trim(), pwController.text.trim());
+
+                if (user != null) {
+                  if (!mounted) return;
+                  Navigator.pop(context); // 팝업 닫기
+                  _onLoginSuccess(user);  // 성공 로직 실행
+                }
+              } catch (e) {
+                // 2. ApiService에서 던진 상세 에러 메시지 추출
+                // "Exception: 메시지" 형태에서 메시지만 남깁니다.
+                final errorMsg = e.toString().replaceAll("Exception: ", "");
+
+                if (!mounted) return;
+
+                // 3. 사용자에게 실패 사유를 SnackBar로 알림
                 ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("로그인 실패: 아이디 또는 비밀번호를 확인하세요."))
+                  SnackBar(
+                    content: Text(errorMsg),
+                    backgroundColor: Colors.redAccent,
+                    duration: const Duration(seconds: 3),
+                  ),
                 );
               }
             },

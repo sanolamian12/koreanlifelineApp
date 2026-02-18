@@ -36,6 +36,7 @@ class ApiService {
   }
 
   // [수정] 로그인 시 서버로부터 받은 access_token을 메모리에 저장
+  // [수정] 로그인: 삭제된 계정 등의 에러 메시지 처리를 위해 에러 핸들링 보완
   Future<UserModel?> login(String accountId, String password) async {
     try {
       final response = await _dio.post(
@@ -43,22 +44,41 @@ class ApiService {
         data: {'accountId': accountId, 'password': password},
       );
       if (response.statusCode == 200) {
-        // 서버 응답에서 토큰 추출 및 저장
         _accessToken = response.data['access_token'];
-
         await saveLoginInfo(accountId, password);
-        print("로그인 성공! 토큰 확보됨.");
-        print("서버 응답 원본: ${response.data}");
-
         return UserModel.fromJson(response.data);
       }
       return null;
+    } on DioException catch (e) {
+      // 서버가 에러 응답(401, 404 등)을 줬을 때 메시지 추출
+      String errorMessage = "로그인에 실패했습니다.";
+      if (e.response != null && e.response?.data != null) {
+        // 서버에서 return { message: '...' } 로 보내는 내용을 가져옴
+        errorMessage = e.response?.data['message'] ?? errorMessage;
+      }
+      // 이 메시지를 담아 에러를 위로 던집니다.
+      throw Exception(errorMessage);
     } catch (e) {
-      print("로그인 실패: $e");
-      return null;
+      print("로그인 에러: $e");
+      throw Exception("네트워크 오류가 발생했습니다.");
     }
   }
+  // [추가] 계정 삭제 요청하기 (Soft Delete)
+  Future<bool> withdraw(String accountId) async {
+    try {
+      // 백엔드 컨트롤러의 @Patch('withdraw/:id') 경로와 일치시킵니다.
+      final response = await _dio.patch('/auth/withdraw/$accountId');
 
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("계정 탈퇴 요청 성공");
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print("계정 탈퇴 요청 중 에러 발생: $e");
+      return false;
+    }
+  }
   // [수정] URL 경로를 baseUrl 기반 상대 경로로 통일
   Future<Map<String, dynamic>?> getMyActivities(String accountId) async {
     try {

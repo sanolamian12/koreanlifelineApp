@@ -55,12 +55,12 @@ class _MyPageState extends State<MyPage> {
     }
   }
   // 활동 기간 계산 (From registeredAt - To Now)
-  String _getActivityPeriod() {
-    if (widget.user == null) return "-";
-    final fromDate = widget.user!.registeredAt; // 서버에서 받아온 가입일
-    final now = DateTime.now();
-    return "${fromDate.year}.${fromDate.month.toString().padLeft(2, '0')} - ${now.year}.${now.month.toString().padLeft(2, '0')}";
-  }
+  // String _getActivityPeriod() {
+  //   if (widget.user == null) return "-";
+  //   final fromDate = widget.user!.registeredAt; // 서버에서 받아온 가입일
+  //   final now = DateTime.now();
+  //   return "${fromDate.year}.${fromDate.month.toString().padLeft(2, '0')} - ${now.year}.${now.month.toString().padLeft(2, '0')}";
+  // }
   // 전화번호 수정 다이얼로그
   void _showUpdatePhoneDialog() {
     // [수정] 화면에 표시된 +61 번호를 다이얼로그에서는 0으로 바꿔서 보여줌
@@ -119,8 +119,13 @@ class _MyPageState extends State<MyPage> {
 
   // 로그아웃 로직 (SharedPreferences 삭제 및 메인 이동)
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    // ApiService 내부의 토큰 및 SharedPreferences 일괄 삭제
+    await _apiService.clearLoginInfo();
+
+    // 2. 만약 ApiService의 clearLoginInfo를 믿지 못하거나,
+    // 다른 플러그인이 저장한 데이터까지 싹 지우고 싶다면 추가 (선택사항)
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
 
     if (mounted) {
       // Navigator를 통해 이동할 때 UniqueKey를 가진 MainScreen을 새로 생성합니다.
@@ -136,6 +141,58 @@ class _MyPageState extends State<MyPage> {
       );
     }
   }
+
+  // [수정 및 완성] 계정 삭제 요청 로직
+  Future<void> _requestAccountDeletion() async {
+    if (widget.user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("계정 삭제 요청", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          "정말로 계정 삭제를 요청하시겠습니까?\n삭제된 계정 데이터는 복구가 불가능하며, 즉시 로그아웃됩니다.",
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("취소"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              // 1. 서버에 삭제 요청 (Soft Delete API 호출)
+              final bool isSuccess = await _apiService.withdraw(widget.user!.accountId);
+
+              if (!mounted) return;
+
+              if (isSuccess) {
+                // 2. 다이얼로그 닫기
+                Navigator.pop(context);
+
+                // 3. 안내 메시지 출력
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("계정 삭제가 접수되어 로그아웃됩니다.")),
+                );
+
+                // 4. 즉시 로그아웃 실행 (저장된 정보 삭제 및 메인 초기화 이동)
+                await _logout();
+              } else {
+                // 실패 시 안내
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("삭제 요청 실패. 관리자에게 문의해주세요.")),
+                );
+              }
+            },
+            child: const Text("삭제 및 로그아웃", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentName = widget.user?.accountName ?? "상담원";
@@ -185,13 +242,14 @@ class _MyPageState extends State<MyPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow("활동 기간:", _getActivityPeriod()),
-                _buildInfoRow("상담 횟수:", "$_historyCount회"),
-                _buildInfoRow("상담 시간:", "$_totalHours시간"),
+                // _buildInfoRow("활동 기간:", _getActivityPeriod()),
+                // _buildInfoRow("상담 횟수:", "$_historyCount회"),
+                // _buildInfoRow("상담 시간:", "$_totalHours시간"),
+                _buildInfoRow("",""),
               ],
             ),
           ),
-          const SizedBox(height: 30),
+          //const SizedBox(height: 30),
 
           // 5. 내 활동 상세보기 버튼 (클릭 시 화면 이동 로직 추가)
           _buildActionButton(context, "내 활동 상세보기", AppColors.gradBtnBlue, () {
@@ -208,6 +266,14 @@ class _MyPageState extends State<MyPage> {
           // 6. 로그아웃 버튼
         _buildActionButton(context, "로 그 아 웃", AppColors.gradBtnGreen, () => _logout()),
           const SizedBox(height: 30),
+
+          // 7. 계정삭제 요청하기 (빨간색 그라데이션 적용)
+          _buildActionButton(
+              context,
+              "계정삭제 요청하기",
+              AppColors.gradBtnRed, // theme에서 정의한 빨간 그라데이션
+                  () => _requestAccountDeletion()
+          ),
         ],
       ),
     );
@@ -246,7 +312,7 @@ class _MyPageState extends State<MyPage> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
         children: [
           SizedBox(
