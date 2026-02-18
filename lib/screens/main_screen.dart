@@ -101,9 +101,6 @@ class _MainScreenState extends State<MainScreen> {
       throw Exception('Could not launch $url');
     }
   }
-
-
-  // [추가] 로그인 팝업 다이얼로그 메서드
   // [수정] 로그인 팝업 다이얼로그 메서드
   void _showLoginDialog() {
     final TextEditingController idController = TextEditingController();
@@ -166,7 +163,22 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+  // [추가] 홈페이지 호출 함수
+  Future<void> _launchHomePageUrl() async {
+    final Uri url = Uri.parse(ApiConstants.homePageUrl);
 
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.inAppWebView, // iOS: SFSafariViewController, Android: Custom Tabs
+      browserConfiguration: const BrowserConfiguration(showTitle: true),
+      webViewConfiguration: const WebViewConfiguration(
+        enableJavaScript: true,
+        enableDomStorage: true,
+      ),
+    )) {
+      throw Exception('Could not launch $url');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,12 +239,18 @@ class _MainScreenState extends State<MainScreen> {
               style: TextStyle(fontSize: AppSizes.fontBig, color: Colors.black87)
           ),
           const SizedBox(height: 16),
-          Text(
-              "상담자 지원을 원하시면\n이용 문의 주시기 바랍니다.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppSizes.fontMid, color: Colors.black54)
-          ),
-          const SizedBox(height: 50),
+          // Text(
+          //     "상담자 지원을 원하시면\n이용 문의 주시기 바랍니다.",
+          //     textAlign: TextAlign.center,
+          //     style: TextStyle(fontSize: AppSizes.fontMid, color: Colors.black54)
+          // ),
+          // const SizedBox(height: 50),
+          // [추가] 생명의 전화 소개 버튼 (이용 문의 위에 배치)
+          _buildActionButton("생명의 전화 소개", AppColors.gradBtnBlue, () {
+            _launchHomePageUrl();
+          }),
+
+          const SizedBox(height: 16), // 버튼 사이 간격
           _buildActionButton("이용 문의", AppColors.gradBtnBlue, () {
             _launchContactUrl();
           }),

@@ -11,4 +11,6 @@ class ApiConstants {
   static const String status = '$baseUrl/current/status';
 
   static const String contactUsUrl = 'https://boundless-handball-42e.notion.site/2fca0ac1da03816799f7ef4eed780f8a?pvs=105';
+  // [추가] 공식 홈페이지 URL
+  static const String homePageUrl = 'https://www.koreanlifeline.org/';
 }
