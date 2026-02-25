@@ -228,7 +228,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           const SizedBox(height: 40),
           Text(
-              "대표번호\n02 9598 5900",
+              "대표번호\n02 9858 5900",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: AppSizes.fontBiggest, fontWeight: FontWeight.bold, height: 1.2)
           ),
