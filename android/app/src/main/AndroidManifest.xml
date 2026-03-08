@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 인터넷 접속 권한 추가 (릴리스 빌드 필수) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="korean_lifeline"
         android:name="${applicationName}"
